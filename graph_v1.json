@@ -1,0 +1,18 @@
+{
+    "1": {
+        "color": "b",
+        "edge_with": [2, 3, 4]
+    },
+    "2": {
+        "color": "b",
+        "edge_with": [1, 4]
+    },
+    "3": {
+        "color": "g",
+        "edge_with": [1]
+    },
+    "4": {
+        "color": "r",
+        "edge_with": [1, 2]
+    }
+}
