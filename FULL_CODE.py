@@ -135,7 +135,7 @@ def draw_colored_graph(graph: nx.Graph) -> None:
     """
     pos = nx.spring_layout(graph, seed=42)
     node_colors = [graph.nodes[n].get("color", "gray") for n in graph.nodes()]
-    plt.figure(figsize=(5, 5))
+    plt.figure(figsize=(8, 6))
     nx.draw(
         graph,
         pos,
@@ -150,8 +150,6 @@ def draw_colored_graph(graph: nx.Graph) -> None:
     plt.title("Colored graph")
     plt.axis("off")
     plt.show()
-
-
 
 def coloring_algorythm(graph: nx.Graph):
     """
@@ -194,7 +192,6 @@ def coloring_algorythm(graph: nx.Graph):
         return True, working_graph
     return False, None
 
-
 def main():
     '''
     Entry point for the command-line interface.
@@ -205,32 +202,230 @@ def main():
     - "check": check whether the graph coloring is proper and print the result.
     - "dict":  print a dictionary representation of the graph.
     - "draw":  display a colored visualization of the graph.
+    - "color": color the graph using backtracking algorithm.
+    - "info":  show general information about the graph.
 
     Command-line usage:
-        python graph_coloring.py filepath [--mode {check,dict,draw}]
+        python FULL_CODE.py filepath [--mode {check,dict,draw,color,info}] [--verbose]
 
     Examples:
-        python graph_coloring.py graph_v1.json
-        python graph_coloring.py graph_v1.json --mode dict
-        python graph_coloring.py graph_v1.json --mode draw
+        python FULL_CODE.py graph.json
+        python FULL_CODE.py graph.json --mode check
+        python FULL_CODE.py graph.json --mode color
+        python FULL_CODE.py graph.json --mode draw
+        python FULL_CODE.py graph.json --mode info --verbose
     '''
-    parser = argparse.ArgumentParser()
-    parser.add_argument("filepath",)
-    parser.add_argument("--mode", choices=["check", "dict", "draw", "color"],default="draw")
+    # Інтерфейс: створення парсера аргументів командного рядка
+    parser = argparse.ArgumentParser(
+        description="Програма для роботи з розфарбуванням графів",
+        epilog="""
+Приклади використання:
+  %(prog)s graph.json                     Показати інформацію про граф (за замовчуванням)
+  %(prog)s graph.json --mode check        Перевірити правильність розфарбування
+  %(prog)s graph.json --mode dict         Показати граф у вигляді словника
+  %(prog)s graph.json --mode draw         Візуалізувати граф
+  %(prog)s graph.json --mode color        Розфарбувати граф алгоритмом backtracking
+  %(prog)s graph.json --mode info -v      Показати детальну інформацію про граф
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    
+    # Інтерфейс: обов'язковий аргумент - шлях до файлу
+    parser.add_argument(
+        "filepath",
+        type=str,
+        help="Шлях до JSON файлу з даними графа"
+    )
+    
+    # Інтерфейс: режим роботи програми
+    parser.add_argument(
+        "--mode", "-m",
+        choices=["check", "dict", "draw", "color", "info"],
+        default="info",
+        help="""Режим роботи програми:
+  check  - перевірити правильність розфарбування графа
+  dict   - вивести граф у вигляді словника, відсортованого за степенем вершин
+  draw   - відобразити візуалізацію графа
+  color  - розфарбувати граф алгоритмом backtracking (3 кольори: r, g, b)
+  info   - показати загальну інформацію про граф (за замовчуванням)"""
+    )
+    
+    # Інтерфейс: додатковий прапорець для детального виводу
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Показати детальну інформацію про виконання"
+    )
+    
+    # Інтерфейс: опція для збереження результату
+    parser.add_argument(
+        "--output", "-o",
+        type=str,
+        help="Зберегти результат розфарбування у файл (тільки для режиму color)"
+    )
+    
+    # Інтерфейс: парсинг аргументів командного рядка
     args = parser.parse_args()
-    graph = read_undirected_graph(args.filepath)
-    if args.mode == "check":
-        print("Proper coloring:", is_proper_coloring(graph))
-    elif args.mode == "dict":
-        print(graph_to_dict(graph))
-    elif args.mode == "draw":
-        draw_colored_graph(graph)
-    elif args.mode == "color":
-        success, result = coloring_algorythm(graph)
-        print(f'Success: {success}')
-        if success:
-            print(f'Is proper coloring: {is_proper_coloring(result)}')
-            draw_colored_graph(result)
+    
+    try:
+        # Інтерфейс: verbose режим - виведення інформації про читання файлу
+        if args.verbose:
+            print(f"[INFO] Читання графа з файлу: {args.filepath}")
+        
+        graph = read_undirected_graph(args.filepath)
+        
+        # Інтерфейс: verbose режим - виведення інформації про завантажений граф
+        if args.verbose:
+            print(f"[INFO] Граф успішно завантажено: {len(graph.nodes())} вершин, {len(graph.edges())} ребер")
+        
+        # Інтерфейс: виконання відповідної дії залежно від обраного режиму
+        if args.mode == "check":
+            # Інтерфейс: режим перевірки розфарбування
+            print("\n" + "="*60)
+            print("ПЕРЕВІРКА РОЗФАРБУВАННЯ ГРАФА")
+            print("="*60)
+            is_proper = is_proper_coloring(graph)
+            if is_proper:
+                print("✓ Розфарбування є ПРАВИЛЬНИМ")
+                print("  Жодні дві сусідні вершини не мають однакового кольору.")
+            else:
+                print("✗ Розфарбування є НЕПРАВИЛЬНИМ")
+                print("  Знайдено сусідні вершини з однаковим кольором:")
+                for u, v in graph.edges():
+                    if graph.nodes[u]["color"] == graph.nodes[v]["color"]:
+                        print(f"    Вершина {u} (колір: {graph.nodes[u]['color']}) "
+                              f"та вершина {v} (колір: {graph.nodes[v]['color']})")
+            print("="*60 + "\n")
+            
+        elif args.mode == "dict":
+            # Інтерфейс: режим виводу графа у вигляді словника
+            print("\n" + "="*60)
+            print("СЛОВНИКОВЕ ПРЕДСТАВЛЕННЯ ГРАФА")
+            print("(відсортовано за степенем вершин)")
+            print("="*60)
+            graph_dict = graph_to_dict(graph)
+            print(json.dumps(graph_dict, indent=2, ensure_ascii=False))
+            print("="*60 + "\n")
+            
+        elif args.mode == "draw":
+            # Інтерфейс: режим візуалізації графа
+            print("\n" + "="*60)
+            print("ВІЗУАЛІЗАЦІЯ ГРАФА")
+            print("="*60)
+            print("Відкривається вікно з візуалізацією графа...")
+            draw_colored_graph(graph)
+            print("="*60 + "\n")
+            
+        elif args.mode == "color":
+            # Інтерфейс: режим розфарбування графа
+            print("\n" + "="*60)
+            print("РОЗФАРБУВАННЯ ГРАФА АЛГОРИТМОМ BACKTRACKING")
+            print("="*60)
+            # Інтерфейс: verbose режим - виведення інформації про запуск алгоритму
+            if args.verbose:
+                print("[INFO] Запуск алгоритму розфарбування...")
+            
+            success, result = coloring_algorythm(graph)
+            
+            if success:
+                print("✓ Розфарбування успішно знайдено!")
+                print(f"\n✓ Перевірка правильності: {is_proper_coloring(result)}")
+                
+                print("\nРозподіл кольорів:")
+                color_count = {'r': 0, 'g': 0, 'b': 0}
+                for node in result.nodes():
+                    color = result.nodes[node]['color']
+                    color_count[color] = color_count.get(color, 0) + 1
+                
+                color_names = {'r': 'червоний', 'g': 'зелений', 'b': 'синій'}
+                for color, count in color_count.items():
+                    print(f"  {color_names[color]} ({color}): {count} вершин")
+                
+                print("\nРозфарбування вершин:")
+                for node in sorted(result.nodes()):
+                    color = result.nodes[node]['color']
+                    neighbors = list(result.neighbors(node))
+                    print(f"  Вершина {node}: колір '{color}' ({color_names[color]}), "
+                          f"сусідні: {neighbors}")
+                
+                # Інтерфейс: збереження результату, якщо вказано параметр --output
+                if args.output:
+                    output_data = {}
+                    for node in result.nodes():
+                        output_data[str(node)] = {
+                            "color": result.nodes[node]['color'],
+                            "edge_with": list(result.neighbors(node))
+                        }
+                    with open(args.output, 'w', encoding='utf-8') as f:
+                        json.dump(output_data, f, indent=2, ensure_ascii=False)
+                    print(f"\n✓ Результат збережено у файл: {args.output}")
+            else:
+                print("✗ Не вдалося знайти правильне розфарбування")
+                print("  Граф не може бути розфарбований 3 кольорами з урахуванням обмежень")
+            print("="*60 + "\n")
+            
+        elif args.mode == "info":
+            # Інтерфейс: режим виводу загальної інформації про граф
+            print("\n" + "="*60)
+            print("ІНФОРМАЦІЯ ПРО ГРАФ")
+            print("="*60)
+            print(f"Кількість вершин: {len(graph.nodes())}")
+            print(f"Кількість ребер: {len(graph.edges())}")
+            
+            if len(graph.nodes()) > 0:
+                degrees = [graph.degree(node) for node in graph.nodes()]
+                print(f"Мінімальний степінь: {min(degrees)}")
+                print(f"Максимальний степінь: {max(degrees)}")
+                print(f"Середній степінь: {sum(degrees) / len(degrees):.2f}")
+            
+            print(f"\nПравильність розфарбування: ", end="")
+            is_proper = is_proper_coloring(graph)
+            if is_proper:
+                print("✓ ПРАВИЛЬНЕ")
+            else:
+                print("✗ НЕПРАВИЛЬНЕ")
+            
+            # Інтерфейс: verbose режим - детальна інформація про вершини та ребра
+            if args.verbose:
+                print("\nВершини та їх кольори:")
+                color_names = {'r': 'червоний', 'g': 'зелений', 'b': 'синій', 
+                              'R': 'червоний', 'G': 'зелений', 'B': 'синій'}
+                for node in sorted(graph.nodes()):
+                    color = graph.nodes[node].get('color', 'не вказано')
+                    color_display = color_names.get(color, color)
+                    neighbors = list(graph.neighbors(node))
+                    print(f"  {node}: колір '{color}' ({color_display}), "
+                          f"степінь {graph.degree(node)}, сусідні: {neighbors}")
+                
+                print("\nРебра:")
+                for u, v in sorted(graph.edges()):
+                    print(f"  ({u}, {v})")
+            
+            print("="*60 + "\n")
+            
+    # Інтерфейс: обробка помилок при роботі з файлами та даними
+    except FileNotFoundError:
+        print(f"\n✗ ПОМИЛКА: Файл '{args.filepath}' не знайдено!")
+        print("Перевірте правильність шляху до файлу.\n")
+        return 1
+    except json.JSONDecodeError as e:
+        print(f"\n✗ ПОМИЛКА: Не вдалося розпарсити JSON файл!")
+        print(f"Деталі: {e}\n")
+        return 1
+    except KeyError as e:
+        print(f"\n✗ ПОМИЛКА: Відсутнє обов'язкове поле в JSON файлі!")
+        print(f"Деталі: {e}\n")
+        return 1
+    except Exception as e:
+        print(f"\n✗ ПОМИЛКА: {type(e).__name__}: {e}")
+        # Інтерфейс: verbose режим - виведення повного traceback при помилці
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        return 1
+    
+    return 0
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main())
