@@ -2,6 +2,7 @@
 Graph coloring module using backtracking algorithm.
 Implements 3-coloring (RGB) for undirected graphs.
 """
+import time
 import argparse
 import json
 import networkx as nx
@@ -192,6 +193,30 @@ def coloring_algorythm(graph: nx.Graph):
         return True, working_graph
     return False, None
 
+def perfomance(graph: nx.Graph):
+    """
+    Docstring for testing perfomance between built-in \
+algorithm and NetworkX's Largest_First algorigthm.
+    
+    :param graph: NetworkX graph to be tested.
+    :type graph: nx.Graph()
+    """
+    start_time = time.perf_counter()
+    coloring_algorythm(graph)
+    middle_time = time.perf_counter()
+    nx.greedy_color(graph, strategy="largest_first")
+    end_time = time.perf_counter()
+    builtin_time = middle_time - start_time
+    nx_time = end_time - middle_time
+    print(f"Вбудований Алгоритм: {builtin_time:.5f}")
+    print(f"NetworkX   Алгоритм: {nx_time:.5f}")
+    print("\n" + "="*60)
+    if builtin_time < nx_time:
+        print(f"Вбудований Алгоритм ліпший за NetworkX в {nx_time/builtin_time:.5f} рази.")
+    if nx_time < builtin_time:
+        print(f"NetworkX Алгоритм ліпший за Вбудований на {builtin_time/nx_time:.5f} рази.")
+
+
 def main():
     '''
     Entry point for the command-line interface.
@@ -222,14 +247,15 @@ def main():
     parser.add_argument("filepath", type=str, help="Шлях до JSON файлу з даними графа")
     # Інтерфейс: режим роботи програми
     parser.add_argument("--mode", "-m",
-        choices=["check", "dict", "draw", "color", "info"],
+        choices=["check", "dict", "draw", "color", "info", "perf"],
         default="info",
         help="""Режим роботи програми:
   check  - перевірити правильність розфарбування графа
   dict   - вивести граф у вигляді словника, відсортованого за степенем вершин
   draw   - відобразити візуалізацію графа
   color  - розфарбувати граф алгоритмом backtracking (3 кольори: r, g, b)
-  info   - показати загальну інформацію про граф (за замовчуванням)""")
+  info   - показати загальну інформацію про граф (за замовчуванням)
+  perf   - порівняти ефективність між вбудованим алгоритмом та алгоритмом networkx""")
     # Інтерфейс: додатковий аргумент для детального виводу
     parser.add_argument("--verbose", "-v", action="store_true",\
  help="Показати детальну інформацію про виконання")
@@ -356,6 +382,13 @@ def main():
                 for u, v in sorted(graph.edges()):
                     print(f"  ({u}, {v})")
 
+            print("="*60 + "\n")
+
+        elif args.mode == "perf":
+            # Інтерфейс: режим порівняння ефективності вбудованого та networkx алгоритму.
+            print("\n" + "="*60)
+            print("ЕФЕКТИВНІСТЬ АЛГОРИТМІВ")
+            perfomance(graph)
             print("="*60 + "\n")
 
     # Інтерфейс: обробка помилок при роботі з файлами та даними
