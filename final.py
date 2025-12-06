@@ -141,16 +141,18 @@ def draw_colored_graph(graph: nx.Graph) -> None:
         pos,
         with_labels=True,
         node_color=node_colors,
-        edge_color="black",
         node_size=800,
-        font_size=10,
+        linewidths=1,
+        edgecolors="black",
         font_color="white",
-        linewidths=1
+        font_size=10,
+        font_weight="bold",
+        width=1,
+        edge_color="black",
     )
-    plt.title("Colored graph")
+    plt.title("Colored graph", fontsize=13)
     plt.axis("off")
     plt.show()
-
 def coloring_algorythm(graph: nx.Graph):
     """
     Color a graph using 3 colors (red, green, blue) via backtracking.
