@@ -10,48 +10,19 @@ import matplotlib.pyplot as plt
 
 def read_undirected_graph(filepath: str) -> nx.Graph:
     """
-    Read an undirected graph from a JSON file and construct a NetworkX Graph.
+    Load an undirected graph from a JSON file.
 
-    The JSON file must contain a dictionary where each key is a string representing
-    a node ID, and each value is an object with two fields:
-        - "color": a string specifying the node's color
-        - "edge_with": a list of integers representing adjacent nodes
-    JSON Example:
-        {
-            "1": {
-                "color": "b",
-                "edge_with": [2, 3, 4]
-            },
-            "2": {
-                "color": "b",
-                "edge_with": [1, 4]
-            },
-            "3": {
-                "color": "g",
-                "edge_with": [1]
-            },
-            "4": {
-                "color": "r",
-                "edge_with": [1, 2]
-            }
-        }
+    The JSON must map node IDs to objects with:
+        - "color": initial node color (string)
+        - "edge_with": list of adjacent node IDs
 
-    Each edge is added only once (u < v) because the graph is undirected.
+    Only one copy of each undirected edge is added (u < v).
 
     Args:
-        filepath (str): Path to the JSON file containing graph data.
+        filepath (str): Path to the JSON file.
 
     Returns:
-        nx.Graph: A NetworkX undirected graph with node colors and edges.
-
-    Example:
-    >>> graph = read_undirected_graph('graph_v1.json')
-    >>> graph.nodes
-    NodeView((1, 2, 3, 4))
-    >>> graph.edges
-    EdgeView([(1, 2), (1, 3), (1, 4), (2, 4)])
-    >>> graph.nodes(data=True)
-    NodeDataView({1: {'color': 'b'}, 2: {'color': 'g'}, 3: {'color': 'g'}, 4: {'color': 'r'}})
+        nx.Graph: Graph with 'color' attributes on nodes.
     """
     with open(filepath, "r", encoding="utf-8") as file:
         raw_data = json.load(file)
@@ -137,11 +108,13 @@ def draw_colored_graph(graph: nx.Graph) -> None:
     pos = nx.spring_layout(graph, seed=42)
     node_colors = [graph.nodes[n].get("color", "gray") for n in graph.nodes()]
     plt.figure(figsize=(8, 6))
+    ordered_nodes = sorted(graph.nodes())
     nx.draw(
         graph,
         pos,
         with_labels=True,
         node_color=node_colors,
+        nodelist=ordered_nodes,
         node_size=800,
         linewidths=1,
         edgecolors="black",
@@ -154,6 +127,8 @@ def draw_colored_graph(graph: nx.Graph) -> None:
     plt.title("Colored graph", fontsize=13)
     plt.axis("off")
     plt.show()
+
+
 def coloring_algorythm(graph: nx.Graph):
     """
     Color a graph using 3 colors (red, green, blue) via backtracking.
@@ -171,10 +146,14 @@ def coloring_algorythm(graph: nx.Graph):
     for node in working_graph.nodes():
         working_graph.nodes[node]['color'] = None
 
+    ordered_nodes = sorted(working_graph.nodes())
+
     frames = []
     def snapshot():
-        frames.append({n: (working_graph.nodes[n].get("color") if working_graph.nodes[n].get("color") is not None else original_colors[n]) for n in working_graph.nodes()
-        })
+        frames.append({n: (working_graph.nodes[n].get("color")
+                           if working_graph.nodes[n].get("color") is not None
+                           else original_colors[n])
+                       for n in ordered_nodes})
 
     def is_safe(node, color):
         if color == graph.nodes[node]['color']:
@@ -207,6 +186,18 @@ def coloring_algorythm(graph: nx.Graph):
 
 
 def animate_coloring(graph: nx.Graph, frames):
+    """
+    Animate the step-by-step coloring of a graph.
+
+    Each frame represents a mapping of node → color.
+
+    Args:
+        graph (nx.Graph): Graph being colored.
+        frames (list[dict]): Sequence of coloring states.
+
+    Returns:
+        FuncAnimation: Matplotlib animation object.
+    """
     pos = nx.spring_layout(graph, seed=42)
     fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -251,11 +242,8 @@ def main():
         python FULL_CODE.py graph.json --mode draw Візуалізувати граф
         python FULL_CODE.py graph.json --mode info --verbose Показати детальну інформацію про граф
     '''
-    # Інтерфейс: створення парсера аргументів командного рядка
     parser = argparse.ArgumentParser(description="Програма для роботи з розфарбуванням графів")
-    # Інтерфейс: обов'язковий аргумент - шлях до файлу
     parser.add_argument("filepath", type=str, help="Шлях до JSON файлу з даними графа")
-    # Інтерфейс: режим роботи програми
     parser.add_argument("--mode", "-m",
         choices=["check", "dict", "draw", "color", "info"],
         default="info",
@@ -266,19 +254,17 @@ def main():
   color  - розфарбувати граф алгоритмом backtracking (3 кольори: r, g, b)
   info   - показати загальну інформацію про граф (за замовчуванням)
  """)
-    # Інтерфейс: додатковий аргумент для детального виводу
     parser.add_argument("--verbose", "-v", action="store_true",\
  help="Показати детальну інформацію про виконання")
-    # Інтерфейс: опція для збереження результату
     parser.add_argument("--output", "-o", type=str,\
  help="Зберегти результат розфарбування у файл (тільки для режиму color)")
     args = parser.parse_args()
 
     try:
         graph = read_undirected_graph(args.filepath)
-        # Інтерфейс: виконання відповідної дії залежно від обраного режиму
+        #виконання відповідної дії залежно від обраного режиму
         if args.mode == "check":
-            # Інтерфейс: режим перевірки розфарбування
+            #режим перевірки розфарбування
             print("\n" + "="*60)
             print("ПЕРЕВІРКА РОЗФАРБУВАННЯ ГРАФА")
             print("="*60)
@@ -296,7 +282,7 @@ def main():
             print("="*60 + "\n")
 
         elif args.mode == "dict":
-            # Інтерфейс: режим виводу графа у вигляді словника
+            #режим виводу графа у вигляді словника
             print("\n" + "="*60)
             print("СЛОВНИКОВЕ ПРЕДСТАВЛЕННЯ ГРАФА")
             print("(відсортовано за степенем вершин)")
@@ -306,14 +292,14 @@ def main():
             print("="*60 + "\n")
 
         elif args.mode == "draw":
-            # Інтерфейс: режим візуалізації графа
+            #режим візуалізації графа
             print("\n" + "="*60)
             print("ВІЗУАЛІЗАЦІЯ ГРАФА")
             draw_colored_graph(graph)
             print("="*60 + "\n")
 
         elif args.mode == "color":
-            # Інтерфейс: режим розфарбування графа
+            #режим розфарбування графа
             print("\n" + "="*60)
             print("РОЗФАРБУВАННЯ ГРАФА АЛГОРИТМОМ BACKTRACKING")
             print("="*60)
@@ -342,7 +328,7 @@ def main():
  ({color_names[color]}), сусідні: {neighbors}")
                 #draw_colored_graph(result)
                 animate_coloring(graph, frames)
-                # Інтерфейс: збереження результату, якщо вказано параметр --output
+                #збереження результату, якщо вказано параметр --output
                 if args.output:
                     output_data = {}
                     for node in result.nodes():
@@ -359,7 +345,7 @@ def main():
             print("="*60 + "\n")
 
         elif args.mode == "info":
-            # Інтерфейс: режим виводу загальної інформації про граф
+            #режим виводу загальної інформації про граф
             print("\n" + "="*60)
             print("ІНФОРМАЦІЯ ПРО ГРАФ")
             print("="*60)
@@ -377,7 +363,7 @@ def main():
             else:
                 print("\nПравильність розфарбування: ✗ НЕПРАВИЛЬНЕ")
 
-            # Інтерфейс: verbose режим - детальна інформація про вершини та ребра
+            #verbose режим - детальна інформація про вершини та ребра
             if args.verbose:
                 print("\nВершини та їх кольори:")
                 color_names = {'r': 'червоний', 'g': 'зелений', 'b': 'синій',
@@ -395,7 +381,7 @@ def main():
 
             print("="*60 + "\n")
 
-    # Інтерфейс: обробка помилок при роботі з файлами та даними
+    #обробка помилок при роботі з файлами та даними
     except FileNotFoundError:
         print(f"\n✗ ПОМИЛКА: Файл '{args.filepath}' не знайдено!")
         print("Перевірте правильність шляху до файлу.")
