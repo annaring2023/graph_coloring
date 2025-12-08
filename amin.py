@@ -26,15 +26,11 @@ def read_undirected_graph(filepath: str) -> nx.Graph:
     """
     with open(filepath, "r", encoding="utf-8") as file:
         raw_data = json.load(file)
-
     graph_data = {int(node): info for node, info in raw_data.items()}
-
     graph = nx.Graph()
-
     # Додаємо вершини з атрибутом color
     for node, info in graph_data.items():
         graph.add_node(node, color=info["color"])
-
     # Додаємо ребра
     for node, info in graph_data.items():
         for adjacent_node in info["edge_with"]:
@@ -59,34 +55,6 @@ def is_proper_coloring(graph):
         if graph.nodes[u]["color"] == graph.nodes[v]["color"]:
             return False
     return True
-
-def graph_to_dict(graph):
-    """
-    Convert a graph into a dictionary sorted by node degree.
-
-    Nodes are sorted in descending order of their degree (number of neighbors).
-    For each node, the function stores its color and the set of its neighbors.
-
-    Args:
-        graph (nx.Graph): Graph to convert.
-
-    Returns:
-        dict: Dictionary of the form
-            {
-                node: {
-                    "color": <node color>,
-                    "neighbors": {neighbor1, neighbor2, ...}
-                },
-                ...
-            }
-    """
-    sorted_nodes = sorted(graph.nodes(), key=lambda v: graph.degree[v], reverse=True)
-    result = {}
-    for node in sorted_nodes:
-        color = graph.nodes[node].get("color")
-        neighbors = sorted(graph.neighbors(node))
-        result[node] = {"color": color, "neighbors": neighbors}
-    return result
 
 def draw_colored_graph(graph: nx.Graph) -> None:
     """
@@ -142,7 +110,7 @@ def coloring_algorythm(graph: nx.Graph):
     """
     working_graph = graph.copy()
     nodes_list = sorted(working_graph.nodes(), key=lambda v: graph.degree[v], reverse=True)
-    original_colors = {n: graph.nodes[n].get("color", "gray") for n in graph.nodes()}
+    original_colors = {n: graph.nodes[n].get("color") for n in graph.nodes()}
     for node in working_graph.nodes():
         working_graph.nodes[node]['color'] = None
 
@@ -200,7 +168,6 @@ def animate_coloring(graph: nx.Graph, frames):
     """
     pos = nx.spring_layout(graph, seed=42)
     fig, ax = plt.subplots(figsize=(8, 6))
-
     def update(i):
         ax.clear()
         state = frames[i]
@@ -218,6 +185,7 @@ def animate_coloring(graph: nx.Graph, frames):
     anim = FuncAnimation(fig, update, frames=len(frames), interval=700, repeat=False)
     plt.show()
     return anim
+
 def main():
     '''
     Entry point for the command-line interface.
@@ -226,7 +194,6 @@ def main():
     provided JSON file and performs one of the following actions:
 
     - "check": check whether the graph coloring is proper and print the result.
-    - "dict":  print a dictionary representation of the graph.
     - "draw":  display a colored visualization of the graph.
     - "color": color the graph using backtracking algorithm.
     - "info":  show general information about the graph.
@@ -238,14 +205,13 @@ def main():
         python FULL_CODE.py graph.json Показати інформацію про граф (за замовчуванням)
         python FULL_CODE.py graph.json --mode check  Перевірити правильність розфарбування
         python FULL_CODE.py graph.json --mode color Розфарбувати граф алгоритмом backtracking
-        python FULL_CODE.py graph.json --mode dict Показати граф у вигляді словника
         python FULL_CODE.py graph.json --mode draw Візуалізувати граф
         python FULL_CODE.py graph.json --mode info --verbose Показати детальну інформацію про граф
     '''
     parser = argparse.ArgumentParser(description="Програма для роботи з розфарбуванням графів")
     parser.add_argument("filepath", type=str, help="Шлях до JSON файлу з даними графа")
     parser.add_argument("--mode", "-m",
-        choices=["check", "dict", "draw", "color", "info"],
+        choices=["check", "draw", "color", "info"],
         default="info",
         help="""Режим роботи програми:
   check  - перевірити правильність розфарбування графа
@@ -281,15 +247,6 @@ def main():
 ['color']}) та вершина {v} (колір: {graph.nodes[v]['color']})")
             print("="*60 + "\n")
 
-        elif args.mode == "dict":
-            #режим виводу графа у вигляді словника
-            print("\n" + "="*60)
-            print("СЛОВНИКОВЕ ПРЕДСТАВЛЕННЯ ГРАФА")
-            print("(відсортовано за степенем вершин)")
-            print("="*60)
-            graph_dict = graph_to_dict(graph)
-            print(graph_dict)
-            print("="*60 + "\n")
 
         elif args.mode == "draw":
             #режим візуалізації графа
@@ -326,7 +283,6 @@ def main():
                     neighbors = list(result.neighbors(node))
                     print(f"  Вершина {node}: колір '{color}'\
  ({color_names[color]}), сусідні: {neighbors}")
-                #draw_colored_graph(result)
                 animate_coloring(graph, frames)
                 #збереження результату, якщо вказано параметр --output
                 if args.output:
@@ -345,7 +301,6 @@ def main():
             print("="*60 + "\n")
 
         elif args.mode == "info":
-            #режим виводу загальної інформації про граф
             print("\n" + "="*60)
             print("ІНФОРМАЦІЯ ПРО ГРАФ")
             print("="*60)
