@@ -8,6 +8,7 @@ import json
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
 def read_undirected_graph(filepath: str) -> nx.Graph:
     """
     Load an undirected graph from a JSON file.
@@ -34,9 +35,11 @@ def read_undirected_graph(filepath: str) -> nx.Graph:
     # Додаємо ребра
     for node, info in graph_data.items():
         for adjacent_node in info["edge_with"]:
-            if node < adjacent_node:   # щоб не додавати (2,1), якщо вже було (1,2)
+            # щоб не додавати (2,1), якщо вже було (1,2)
+            if node < adjacent_node:
                 graph.add_edge(node, adjacent_node)
     return graph
+
 
 def is_proper_coloring(graph):
     """
@@ -55,6 +58,7 @@ def is_proper_coloring(graph):
         if graph.nodes[u]["color"] == graph.nodes[v]["color"]:
             return False
     return True
+
 
 def draw_colored_graph(graph: nx.Graph) -> None:
     """
@@ -109,7 +113,8 @@ def coloring_algorythm(graph: nx.Graph):
         tuple: (True, colored_graph) if successful, (False, None) otherwise.
     """
     working_graph = graph.copy()
-    nodes_list = sorted(working_graph.nodes(), key=lambda v: graph.degree[v], reverse=True)
+    nodes_list = sorted(working_graph.nodes(),
+                        key=lambda v: graph.degree[v], reverse=True)
     original_colors = {n: graph.nodes[n].get("color") for n in graph.nodes()}
     for node in working_graph.nodes():
         working_graph.nodes[node]['color'] = None
@@ -117,6 +122,7 @@ def coloring_algorythm(graph: nx.Graph):
     ordered_nodes = sorted(working_graph.nodes())
 
     frames = []
+
     def snapshot():
         frames.append({n: (working_graph.nodes[n].get("color")
                            if working_graph.nodes[n].get("color") is not None
@@ -168,6 +174,7 @@ def animate_coloring(graph: nx.Graph, frames):
     """
     pos = nx.spring_layout(graph, seed=42)
     fig, ax = plt.subplots(figsize=(8, 6))
+
     def update(i):
         ax.clear()
         state = frames[i]
@@ -182,9 +189,11 @@ def animate_coloring(graph: nx.Graph, frames):
             font_weight="bold",
         )
         ax.axis("off")
-    anim = FuncAnimation(fig, update, frames=len(frames), interval=700, repeat=False)
+    anim = FuncAnimation(fig, update, frames=len(
+        frames), interval=500, repeat=False)
     plt.show()
     return anim
+
 
 def main():
     '''
@@ -208,29 +217,31 @@ def main():
         python FULL_CODE.py graph.json --mode draw Візуалізувати граф
         python FULL_CODE.py graph.json --mode info --verbose Показати детальну інформацію про граф
     '''
-    parser = argparse.ArgumentParser(description="Програма для роботи з розфарбуванням графів")
-    parser.add_argument("filepath", type=str, help="Шлях до JSON файлу з даними графа")
+    parser = argparse.ArgumentParser(
+        description="Програма для роботи з розфарбуванням графів")
+    parser.add_argument("filepath", type=str,
+                        help="Шлях до JSON файлу з даними графа")
     parser.add_argument("--mode", "-m",
-        choices=["check", "draw", "color", "info"],
-        default="info",
-        help="""Режим роботи програми:
+                        choices=["check", "draw", "color", "info"],
+                        default="info",
+                        help="""Режим роботи програми:
   check  - перевірити правильність розфарбування графа
   dict   - вивести граф у вигляді словника, відсортованого за степенем вершин
   draw   - відобразити візуалізацію графа
   color  - розфарбувати граф алгоритмом backtracking (3 кольори: r, g, b)
   info   - показати загальну інформацію про граф (за замовчуванням)
  """)
-    parser.add_argument("--verbose", "-v", action="store_true",\
- help="Показати детальну інформацію про виконання")
-    parser.add_argument("--output", "-o", type=str,\
- help="Зберегти результат розфарбування у файл (тільки для режиму color)")
+    parser.add_argument("--verbose", "-v", action="store_true",
+                        help="Показати детальну інформацію про виконання")
+    parser.add_argument("--output", "-o", type=str,
+                        help="Зберегти результат розфарбування у файл (тільки для режиму color)")
     args = parser.parse_args()
 
     try:
         graph = read_undirected_graph(args.filepath)
-        #виконання відповідної дії залежно від обраного режиму
+        # виконання відповідної дії залежно від обраного режиму
         if args.mode == "check":
-            #режим перевірки розфарбування
+            # режим перевірки розфарбування
             print("\n" + "="*60)
             print("ПЕРЕВІРКА РОЗФАРБУВАННЯ ГРАФА")
             print("="*60)
@@ -243,20 +254,19 @@ def main():
                 print("  Знайдено сусідні вершини з однаковим кольором:")
                 for u, v in graph.edges():
                     if graph.nodes[u]["color"] == graph.nodes[v]["color"]:
-                        print(f"    Вершина {u} (колір: {graph.nodes[u]\
-['color']}) та вершина {v} (колір: {graph.nodes[v]['color']})")
+                        print(f"    Вершина {u} (колір: {graph.nodes[u]
+                                                         ['color']}) та вершина {v} (колір: {graph.nodes[v]['color']})")
             print("="*60 + "\n")
 
-
         elif args.mode == "draw":
-            #режим візуалізації графа
+            # режим візуалізації графа
             print("\n" + "="*60)
             print("ВІЗУАЛІЗАЦІЯ ГРАФА")
             draw_colored_graph(graph)
             print("="*60 + "\n")
 
         elif args.mode == "color":
-            #режим розфарбування графа
+            # режим розфарбування графа
             print("\n" + "="*60)
             print("РОЗФАРБУВАННЯ ГРАФА АЛГОРИТМОМ BACKTRACKING")
             print("="*60)
@@ -265,7 +275,8 @@ def main():
 
             if success:
                 print("✓ Розфарбування успішно знайдено!")
-                print(f"✓ Перевірка правильності: {is_proper_coloring(result)}")
+                print(
+                    f"✓ Перевірка правильності: {is_proper_coloring(result)}")
 
                 print("\nРозподіл кольорів:")
                 color_count = {'r': 0, 'g': 0, 'b': 0}
@@ -284,7 +295,7 @@ def main():
                     print(f"  Вершина {node}: колір '{color}'\
  ({color_names[color]}), сусідні: {neighbors}")
                 animate_coloring(graph, frames)
-                #збереження результату, якщо вказано параметр --output
+                # збереження результату, якщо вказано параметр --output
                 if args.output:
                     output_data = {}
                     for node in result.nodes():
@@ -318,11 +329,11 @@ def main():
             else:
                 print("\nПравильність розфарбування: ✗ НЕПРАВИЛЬНЕ")
 
-            #verbose режим - детальна інформація про вершини та ребра
+            # verbose режим - детальна інформація про вершини та ребра
             if args.verbose:
                 print("\nВершини та їх кольори:")
                 color_names = {'r': 'червоний', 'g': 'зелений', 'b': 'синій',
-                              'R': 'червоний', 'G': 'зелений', 'B': 'синій'}
+                               'R': 'червоний', 'G': 'зелений', 'B': 'синій'}
                 for node in sorted(graph.nodes()):
                     color = graph.nodes[node].get('color', 'не вказано')
                     color_display = color_names.get(color, color)
@@ -336,7 +347,7 @@ def main():
 
             print("="*60 + "\n")
 
-    #обробка помилок при роботі з файлами та даними
+    # обробка помилок при роботі з файлами та даними
     except FileNotFoundError:
         print(f"\n✗ ПОМИЛКА: Файл '{args.filepath}' не знайдено!")
         print("Перевірте правильність шляху до файлу.")
@@ -346,6 +357,7 @@ def main():
     except KeyError as e:
         print("\n✗ ПОМИЛКА: Відсутнє обов'язкове поле в JSON файлі!")
         print(f"Деталі: {e}")
+
 
 if __name__ == "__main__":
     main()
